@@ -48,10 +48,10 @@ export function AuthForm({
   const [loginType, setLoginType] = useState<"admin" | "user">("user");
 
   const placeholders: Record<UserRole, string> = {
-    student: "student@university.edu",
-    faculty: "faculty@university.edu",
-    admin: "admin@campus-safe.com",
-    rescue: "rescue@university.edu",
+    student: "your.email@example.com",
+    faculty: "your.email@example.com",
+    admin: "admin@example.com",
+    rescue: "your.email@example.com",
   };
 
   if (adminOnly || showAdminLogin) {
@@ -95,7 +95,7 @@ export function AuthForm({
                 name="email"
                 type="email"
                 required
-                placeholder="admin@campus-safe.com"
+                placeholder="admin@example.com"
               />
             </div>
 
@@ -238,7 +238,7 @@ export function AuthForm({
                   name="email"
                   type="email"
                   required
-                  placeholder="admin@campus-safe.com"
+                  placeholder="admin@example.com"
                 />
               </div>
 
@@ -329,8 +329,7 @@ export function AuthForm({
                     id="full_name"
                     name="full_name"
                     required
-                    defaultValue="Ved Prakash"
-                    placeholder="Ved Prakash"
+                    placeholder="Your full name"
                   />
                 </label>
               ) : null}

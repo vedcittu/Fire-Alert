@@ -11,8 +11,18 @@ const supabase = createClient(
 
 serve(async (req) => {
   try {
-    const body = await req.json();
-    const alert = body.alert;
+    let body: any;
+
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ ok: false, error: "Invalid or missing JSON body" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const alert = body?.alert;
 
     if (!alert) {
       return new Response(JSON.stringify({ ok: false, error: "Missing alert payload" }), {

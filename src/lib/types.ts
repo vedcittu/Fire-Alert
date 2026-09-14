@@ -28,7 +28,9 @@ export type SensorNode = {
   humidity_pct: number;
   smoke_level: string;
   flame_detected: boolean;
+  ir_detected: boolean;
   load_pct: number | null;
+  updated_at?: string | null;
 };
 
 export type Alert = {

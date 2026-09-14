@@ -1,9 +1,37 @@
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import { LiveTelemetryBoard } from "@/components/LiveTelemetryBoard";
 import { getProfile } from "@/lib/auth";
-import { dashboardPath } from "@/lib/types";
+import { dashboardPath, type SensorNode } from "@/lib/types";
+
+async function getHomePageNodes() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceKey) {
+    return [] as SensorNode[];
+  }
+
+  const supabase = createSupabaseClient(url, serviceKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+
+  const { data, error } = await supabase.from("sensor_nodes").select("*").order("code");
+
+  if (error) {
+    console.error("Home page live data fetch failed:", error.message);
+    return [] as SensorNode[];
+  }
+
+  return (data as SensorNode[] | null) ?? [];
+}
 
 export default async function HomePage() {
   const profile = await getProfile();
+  const nodeList = await getHomePageNodes();
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -70,6 +98,10 @@ export default async function HomePage() {
       </section>
 
       <main className="mx-auto flex max-w-7xl flex-col gap-stack-lg px-margin-mobile pb-16 md:px-margin-desktop">
+        <div className="mt-6">
+          <LiveTelemetryBoard nodes={nodeList} title="Home live telemetry board" />
+        </div>
+
         <div className="grid gap-stack-md md:grid-cols-2">
           <div className="flex flex-col gap-stack-sm rounded-xl border border-outline-variant bg-surface-container-lowest p-stack-md shadow-sm">
             <div className="flex items-center gap-2 text-primary">

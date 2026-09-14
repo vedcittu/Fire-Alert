@@ -1,0 +1,2 @@
+import{a,c as o,d as t,e}from"./chunk-UXVELPWK.js";import{a as r}from"./chunk-GZNCDKYI.js";import"./chunk-Q7RZ5JID.js";import{createMcpHandler as c}from"@modelcontextprotocol/server";function s(p){return c(()=>e(p),{legacy:"reject"})}var l=r.version;export{a as CURRENT_FEATURE_GROUPS,s as createSupabaseMcpHandler,e as createSupabaseMcpServer,t as createToolSchemas,o as supabaseMcpToolSchemas,l as version};
+//# sourceMappingURL=index.js.map

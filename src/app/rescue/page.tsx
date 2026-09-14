@@ -1,6 +1,7 @@
 import { AlertActions } from "@/components/AlertActions";
 import { BottomNav } from "@/components/BottomNav";
 import { requireProfile } from "@/lib/auth";
+import { buildRescueViewData } from "@/lib/live-data";
 import { createClient } from "@/lib/supabase/server";
 import type { Alert, SensorNode } from "@/lib/types";
 
@@ -14,52 +15,9 @@ export default async function RescueDashboard() {
 
   const alertList = (alerts as Alert[] | null) ?? [];
   const nodeList = (nodes as SensorNode[] | null) ?? [];
-  const critical = alertList.find((a) => a.status !== "resolved" && (a.severity === "critical" || a.severity === "emergency"));
-  const focus =
-    nodeList.find((n) => n.id === critical?.node_id) ??
-    nodeList.find((n) => n.flame_detected) ??
-    nodeList[0];
+  const { critical, focus, quickStats, timeline, escalations, actionQueue, mapZones, teamAssignments, responseBoard } =
+    buildRescueViewData(nodeList, alertList);
   const openCount = alertList.filter((a) => a.status !== "resolved").length;
-  const activeUnits = nodeList.filter((n) => n.status === "online").length;
-  const hotZones = nodeList.filter((n) => n.flame_detected || n.smoke_level === "high").length;
-
-  const quickStats = [
-    { label: "Active alerts", value: String(openCount), style: "bg-error-container text-error" },
-    { label: "Online units", value: String(activeUnits), style: "bg-safety-green/10 text-safety-green" },
-    { label: "Hot zones", value: String(hotZones), style: "bg-warning-yellow/15 text-warning-yellow" },
-  ];
-
-  const timeline = [
-    { time: "08:13", title: "Smoke spike detected", detail: "North corridor node SN-17 reported rapid rise in particulate density" },
-    { time: "08:15", title: "Faculty alert issued", detail: "Building C lockdown and evacuation safety notifications sent" },
-    { time: "08:18", title: "Rescue team dispatched", detail: "Two units routed to west stairwell for triage and access check" },
-    { time: "08:22", title: "Critical escalation", detail: "Temperature exceeded thermal threshold; emergency response activated" },
-  ];
-
-  const escalations = [
-    { level: "Level 1", title: "On-site triage", status: "Active", tone: "bg-warning-yellow/20 text-warning-yellow" },
-    { level: "Level 2", title: "Fire containment", status: "Escalated", tone: "bg-error-container text-error" },
-    { level: "Level 3", title: "Campus-wide alert", status: "Broadcast", tone: "bg-safety-green/10 text-safety-green" },
-  ];
-
-  const actionQueue = [
-    "Confirm all exit pathways are clear for evacuation",
-    "Assign one team to the west corridor and another to the library stairwell",
-    "Notify faculty and campus security of emergency-safe route",
-    "Confirm extinguisher access and safe water supply around node 17",
-  ];
-
-  const mapZones = [
-    { name: "Main Gate", flag: "Open", style: "border-safety-green/40 bg-safety-green/10 text-safety-green" },
-    { name: "North Tower", flag: "Risk", style: "border-warning-yellow/40 bg-warning-yellow/20 text-warning-yellow" },
-    { name: "Library Annex", flag: "Blocked", style: "border-error/40 bg-error-container text-error" },
-  ];
-
-  const teamAssignments = [
-    { name: "Unit 07", role: "Fire suppression", status: "En route", color: "text-safety-green" },
-    { name: "Unit 12", role: "Evacuation lead", status: "Holding", color: "text-warning-yellow" },
-    { name: "Med Team A", role: "Triage support", status: "Ready", color: "text-primary" },
-  ];
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-surface text-on-surface">
@@ -208,31 +166,17 @@ export default async function RescueDashboard() {
           <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-stack-lg shadow-sm">
             <h3 className="mb-3 font-label-caps text-[12px] text-on-surface-variant">RESPONSE BOARD</h3>
             <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container p-3">
-                <div>
-                  <p className="font-data-mono text-[11px] text-on-surface-variant">NEAREST UNIT</p>
-                  <p className="mt-1 text-base font-bold text-primary">Unit 07 / North Gate</p>
+              {responseBoard.map((item) => (
+                <div key={item.label} className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container p-3">
+                  <div>
+                    <p className="font-data-mono text-[11px] text-on-surface-variant">{item.label}</p>
+                    <p className="mt-1 text-base font-bold text-primary">{item.value}</p>
+                  </div>
+                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${item.badgeStyle}`}>
+                    {item.badge}
+                  </span>
                 </div>
-                <span className="rounded-full bg-safety-green/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-safety-green">
-                  En route
-                </span>
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container p-3">
-                <div>
-                  <p className="font-data-mono text-[11px] text-on-surface-variant">EVAC ROUTE</p>
-                  <p className="mt-1 text-base font-bold text-primary">South Corridor / Safe Exit A</p>
-                </div>
-                <span className="material-symbols-outlined text-[18px] text-primary">directions_walk</span>
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container p-3">
-                <div>
-                  <p className="font-data-mono text-[11px] text-on-surface-variant">TEAM STATUS</p>
-                  <p className="mt-1 text-base font-bold text-primary">4 responders ready</p>
-                </div>
-                <span className="rounded-full bg-warning-yellow/20 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-warning-yellow">
-                  Ready
-                </span>
-              </div>
+              ))}
             </div>
           </div>
 

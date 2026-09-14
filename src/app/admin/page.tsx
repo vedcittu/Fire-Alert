@@ -1,5 +1,6 @@
 import { createNodeAlert, updateNodeSettings } from "@/app/actions/admin";
 import { BottomNav } from "@/components/BottomNav";
+import { LiveTelemetryBoard } from "@/components/LiveTelemetryBoard";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { dashboardPath, type Alert, type Building, type SensorNode } from "@/lib/types";
@@ -53,6 +54,10 @@ export default async function AdminDashboard() {
           <StatCard title="Online nodes" value={String(onlineCount)} tone="success" trend="Healthy" />
           <StatCard title="Offline nodes" value={String(offlineCount)} tone="neutral" trend="Watch" />
           <StatCard title="Critical alerts" value={String(criticalCount)} tone="danger" trend="Action" />
+        </section>
+
+        <section className="mt-6">
+          <LiveTelemetryBoard nodes={nodeList} title="Admin live telemetry board" />
         </section>
 
         <section className="mt-6 grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
@@ -181,7 +186,7 @@ export default async function AdminDashboard() {
                 <span>Alert title</span>
                 <input
                   name="title"
-                  defaultValue={firstNode ? `${firstNode.code} critical alert` : "Campus fire alert"}
+                  placeholder={firstNode ? `${firstNode.code} critical alert` : "Enter alert title"}
                   className="w-full rounded-xl border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface outline-none ring-0"
                 />
               </label>
@@ -190,7 +195,7 @@ export default async function AdminDashboard() {
                 <span>Location</span>
                 <input
                   name="location"
-                  defaultValue={firstNode?.location ?? "Campus"}
+                  placeholder={firstNode?.location ?? "Enter location"}
                   className="w-full rounded-xl border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface outline-none ring-0"
                 />
               </label>
@@ -200,7 +205,7 @@ export default async function AdminDashboard() {
                 <textarea
                   name="message"
                   rows={4}
-                  defaultValue="Fire safety team should evacuate the area and confirm the source immediately."
+                  placeholder="Describe the incident or response instructions"
                   className="w-full rounded-xl border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface outline-none ring-0"
                 />
               </label>

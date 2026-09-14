@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BottomNav } from "@/components/BottomNav";
+import { LiveTelemetryBoard } from "@/components/LiveTelemetryBoard";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Alert, SensorNode } from "@/lib/types";
@@ -80,6 +81,10 @@ export default async function StudentDashboard() {
             />
           </div>
         </section>
+
+        <div className="mt-6">
+          <LiveTelemetryBoard nodes={nodes as SensorNode[]} title="Student live telemetry board" />
+        </div>
 
         <section className="mt-6">
           <div className="mb-4 flex items-center justify-between gap-3">

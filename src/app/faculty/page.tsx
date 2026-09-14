@@ -1,4 +1,5 @@
 import { BottomNav } from "@/components/BottomNav";
+import { LiveTelemetryBoard } from "@/components/LiveTelemetryBoard";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Alert, Building, SensorNode } from "@/lib/types";
@@ -73,6 +74,10 @@ export default async function FacultyDashboard() {
               ))
             )}
           </div>
+        </section>
+
+        <section className="px-margin-mobile py-stack-md">
+          <LiveTelemetryBoard nodes={nodeList} title="Faculty live telemetry board" />
         </section>
 
         <section className="px-margin-mobile py-stack-md">

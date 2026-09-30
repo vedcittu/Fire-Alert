@@ -1,27 +1,26 @@
 import { BottomNav } from "@/components/BottomNav";
+import { SensorMap } from "@/components/SensorMap";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import type { SensorNode } from "@/lib/types";
+import type { Alert, SensorNode } from "@/lib/types";
 
 export default async function MapPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
-  const { data } = await supabase.from("sensor_nodes").select("*").order("code");
+  const [{ data }, { data: alerts }] = await Promise.all([
+    supabase.from("sensor_nodes").select("*").order("code"),
+    supabase.from("alerts").select("*").neq("status", "resolved").order("created_at", { ascending: false }),
+  ]);
   const nodes = (data as SensorNode[] | null) ?? [];
+  const openAlerts = (alerts as Alert[] | null) ?? [];
 
   return (
     <div className="min-h-screen bg-background pb-28">
       <header className="sticky top-0 z-10 border-b border-outline-variant bg-surface p-margin-mobile">
         <h1 className="text-center font-headline-display text-headline-display">Campus Map</h1>
       </header>
-      <main className="mx-auto max-w-4xl p-margin-mobile">
-        <div className="relative min-h-[320px] overflow-hidden rounded-xl border border-outline-variant bg-map-bg">
-          <img
-            alt="Campus map"
-            className="h-full w-full object-cover opacity-70"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3qd4ORHaDdJn_zVKWF6WVQwcb7JxqusDolum_Ibq-y5GooTmbSR2XIz_LAMnbUAmsAhjVywIfJbbMmRvQMpsrd7v2q5IkGnHu8Ydf8dxUFpXnlvjSuUVDryamSV_BGZ1bovLhLSizqh5U_izgV0NEvfBv-YoRkB7L-p7wvOOptqx83pJCTfesXDfYTOPZDlTvDS0bHqF1f4TW3KoLxYqMuS_6tmsD7idRLG3b76xql6Guodvx2qx-"
-          />
-        </div>
+      <main className="mx-auto max-w-6xl space-y-4 p-margin-mobile">
+        <SensorMap nodes={nodes} alerts={openAlerts} />
         <div className="mt-4 grid gap-3">
           {nodes.map((node) => (
             <div key={node.id} className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">

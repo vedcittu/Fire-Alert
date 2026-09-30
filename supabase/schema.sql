@@ -32,9 +32,15 @@ create table if not exists public.sensor_nodes (
   flame_detected boolean not null default false,
   ir_detected boolean not null default false,
   load_pct double precision,
+  latitude double precision,
+  longitude double precision,
   updated_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
+
+alter table public.sensor_nodes
+  add column if not exists latitude double precision,
+  add column if not exists longitude double precision;
 
 create table if not exists public.alerts (
   id uuid primary key default gen_random_uuid(),

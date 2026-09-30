@@ -28,6 +28,7 @@ export function buildRescueViewData(nodes: SensorNode[] = [], alerts: Alert[] = 
   ];
 
   const timeline = openAlerts.slice(0, 4).map((alert) => ({
+    id: alert.id,
     time: formatClock(alert.created_at),
     title: alert.title || "Incident update",
     detail: `${alert.location} · ${alert.severity.toUpperCase()} status${alert.node_id ? ` · node ${alert.node_id}` : ""}`,

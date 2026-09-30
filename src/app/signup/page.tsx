@@ -7,7 +7,12 @@ export default async function SignupPage({
 }) {
   const params = await searchParams;
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-margin-mobile md:p-margin-desktop">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background px-4 pb-12 pt-32 sm:px-6 sm:pt-36">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl" />
+        <div className="absolute -right-20 bottom-4 h-80 w-80 rounded-full bg-slate-300/40 blur-3xl" />
+      </div>
+
       <AuthForm mode="signup" error={params.error} />
     </div>
   );

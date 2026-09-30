@@ -30,6 +30,8 @@ export type SensorNode = {
   flame_detected: boolean;
   ir_detected: boolean;
   load_pct: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   updated_at?: string | null;
 };
 

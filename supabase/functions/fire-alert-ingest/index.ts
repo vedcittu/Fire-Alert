@@ -30,7 +30,7 @@ serve(async (req) => {
 
     const { data: existingNode, error: fetchError } = await supabase
       .from("sensor_nodes")
-      .select("id, code, location, building_id")
+      .select("id, code, location, building_id, temperature_c, smoke_level, flame_detected, ir_detected")
       .eq("code", code)
       .maybeSingle();
 
@@ -38,6 +38,22 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ ok: false, error: fetchError.message }),
         { status: 500, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const hasLatitude = body.latitude !== undefined && body.latitude !== null;
+    const hasLongitude = body.longitude !== undefined && body.longitude !== null;
+    const latitudeValue = Number(body.latitude);
+    const longitudeValue = Number(body.longitude);
+
+    if (
+      hasLatitude !== hasLongitude ||
+      (hasLatitude && (!Number.isFinite(latitudeValue) || Math.abs(latitudeValue) > 90)) ||
+      (hasLongitude && (!Number.isFinite(longitudeValue) || Math.abs(longitudeValue) > 180))
+    ) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "latitude and longitude must be valid coordinate pairs" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -52,6 +68,8 @@ serve(async (req) => {
       flame_detected: flameDetected,
       ir_detected: irDetected,
       load_pct: Number.isFinite(loadPct) ? loadPct : null,
+      latitude: hasLatitude ? latitudeValue : existingNode?.latitude ?? null,
+      longitude: hasLongitude ? longitudeValue : existingNode?.longitude ?? null,
       updated_at: new Date().toISOString(),
     };
 
@@ -69,7 +87,15 @@ serve(async (req) => {
     }
 
     let alertData = null;
-    const shouldCreateAlert = flameDetected || irDetected || smokeLevel === "high" || temperatureC >= 45;
+    const wasRiskActive = Boolean(
+      existingNode &&
+        (existingNode.flame_detected ||
+          existingNode.ir_detected ||
+          existingNode.smoke_level === "high" ||
+          Number(existingNode.temperature_c) >= 45),
+    );
+    const isRiskActive = flameDetected || irDetected || smokeLevel === "high" || nodePayload.temperature_c >= 45;
+    const shouldCreateAlert = isRiskActive && !wasRiskActive;
 
     if (shouldCreateAlert) {
       const { data: insertedAlert, error: insertError } = await supabase
@@ -95,6 +121,16 @@ serve(async (req) => {
       }
 
       alertData = insertedAlert;
+
+      if (["critical", "emergency"].includes(insertedAlert.severity)) {
+        const { error: emailError } = await supabase.functions.invoke("fire-alert-email", {
+          body: { alert: insertedAlert },
+        });
+
+        if (emailError) {
+          console.error("fire-alert-email dispatch failed:", emailError.message);
+        }
+      }
     }
 
     return new Response(

@@ -1,12 +1,29 @@
 import { BottomNav } from "@/components/BottomNav";
 import { LiveTelemetryBoard } from "@/components/LiveTelemetryBoard";
+import { SensorMap } from "@/components/SensorMap";
+import { FacultyAlertsPanel } from "@/components/faculty/FacultyAlertsPanel";
+import { FacultyStatGrid } from "@/components/faculty/FacultyStatGrid";
+import { FacultyStatusHero } from "@/components/faculty/FacultyStatusHero";
+import { RevealOnScroll } from "@/components/faculty/RevealOnScroll";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Alert, Building, SensorNode } from "@/lib/types";
 
-function timeAgo(iso: string) {
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  return mins < 1 ? "just now" : `${mins}m ago`;
+/**
+ * Captures the request clock once per render pass. Kept in a module-scope
+ * helper so the dashboard reads time in one place rather than inline.
+ */
+function currentTimestamp() {
+  return Date.now();
+}
+
+function SectionHeading({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="mb-4 flex items-end justify-between gap-4">
+      <h2 className="text-lg font-bold tracking-[-0.03em] text-slate-900 sm:text-xl">{title}</h2>
+      {hint ? <p className="text-right text-xs font-semibold text-slate-500 sm:text-sm">{hint}</p> : null}
+    </div>
+  );
 }
 
 export default async function FacultyDashboard() {
@@ -23,121 +40,151 @@ export default async function FacultyDashboard() {
   const buildingList = (buildings as Building[] | null) ?? [];
   const online = nodeList.filter((n) => n.status === "online").length;
   const offline = nodeList.filter((n) => n.status === "offline").length;
+  const renderedAt = currentTimestamp();
+
+  const criticalAlerts = openAlerts.filter(
+    (alert) => alert.severity === "critical" || alert.severity === "emergency",
+  ).length;
+  const campusState = criticalAlerts > 0 ? "emergency" : openAlerts.length > 0 ? "watch" : "calm";
+  const heroCopy = {
+    calm: {
+      title: "All systems nominal",
+      message:
+        "Every monitored lab is reporting normal conditions and no incidents are open. Telemetry is streaming live from the campus sensor network.",
+    },
+    watch: {
+      title: `${openAlerts.length} open alert${openAlerts.length === 1 ? "" : "s"} to review`,
+      message:
+        "Active incidents are being tracked below. Confirm the affected zones and verify that response owners have acknowledged them.",
+    },
+    emergency: {
+      title: "Critical incident active",
+      message:
+        "A critical alert is open on campus. Review the incident detail, confirm responder assignment, and validate evacuation routes for the affected buildings.",
+    },
+  }[campusState];
+
 
   return (
-    <div className="flex min-h-screen flex-col bg-background pb-28">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-surface-variant bg-surface p-margin-mobile">
-        <h2 className="flex-1 text-center font-headline-display text-headline-display text-on-surface">
-          Faculty Dashboard
-        </h2>
+    <div className="min-h-screen bg-background pb-28">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Faculty · Operations</p>
+            <h1 className="mt-1 text-xl font-black tracking-[-0.05em] text-slate-900 sm:text-2xl">Dashboard</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="hidden text-sm font-semibold text-slate-600 sm:block">
+              {profile.full_name ?? profile.email}
+            </span>
+            <span className="status-pill bg-slate-100 text-slate-700">Faculty</span>
+          </div>
+        </div>
       </header>
 
-      <main className="flex-1">
-        <section className="grid grid-cols-2 gap-gutter p-margin-mobile">
-          <div className="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-3 w-3">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-safety-green opacity-75" />
-                <span className="relative inline-flex h-3 w-3 rounded-full bg-safety-green" />
-              </span>
-              <h3 className="font-label-caps text-on-surface-variant">ONLINE NODES</h3>
-            </div>
-            <p className="font-emergency-hero-mobile text-primary">{online}</p>
-          </div>
-          <div className="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
-            <div className="flex items-center gap-2">
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-node-offline" />
-              <h3 className="font-label-caps text-on-surface-variant">OFFLINE NODES</h3>
-            </div>
-            <p className="font-emergency-hero-mobile text-on-surface-variant">{offline}</p>
-          </div>
+      <main className="mx-auto max-w-6xl px-5 pb-12 pt-6 sm:px-8 sm:pt-8">
+        <FacultyStatusHero
+          state={campusState}
+          title={heroCopy.title}
+          message={heroCopy.message}
+          onlineCount={online}
+          totalCount={nodeList.length}
+          activeAlerts={openAlerts.length}
+        />
+
+        <section className="mt-6 sm:mt-8" aria-label="Sensor node summary">
+          <FacultyStatGrid
+            stats={[
+              {
+                label: "Total nodes",
+                value: nodeList.length,
+                tone: "total",
+                icon: "sensors",
+                hint: "Registered on campus",
+              },
+              { label: "Online", value: online, tone: "online", icon: "wifi", hint: "Streaming live telemetry" },
+              { label: "Offline", value: offline, tone: "offline", icon: "wifi_off", hint: "Awaiting telemetry" },
+              {
+                label: "Active alerts",
+                value: openAlerts.length,
+                tone: "alert",
+                icon: "notifications_active",
+                hint: criticalAlerts > 0 ? `${criticalAlerts} critical` : "No critical incidents",
+              },
+            ]}
+          />
         </section>
 
-        <section className="px-margin-mobile py-stack-sm">
-          <div className="flex flex-col gap-3 rounded-xl border border-error/20 bg-error-container p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h3 className="flex items-center gap-2 font-label-caps text-on-error-container">
-                <span className="material-symbols-outlined text-sm">warning</span> ACTIVE ALERTS
-              </h3>
-              <span className="rounded-full bg-error px-2 py-0.5 text-xs font-bold text-on-error">
-                {openAlerts.length}
-              </span>
-            </div>
-            {openAlerts.length === 0 ? (
-              <p className="text-sm text-on-error-container">No active incidents.</p>
-            ) : (
-              openAlerts.map((alert) => (
-                <div key={alert.id} className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-on-error-container">{alert.location}</span>
-                  <span className="font-bold text-error">{timeAgo(alert.created_at)}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
 
-        <section className="px-margin-mobile py-stack-md">
+        <div className="mt-10">
+          <FacultyAlertsPanel alerts={openAlerts} renderedAt={renderedAt} />
+        </div>
+
+        <RevealOnScroll className="mt-10">
+          <SectionHeading title="Live telemetry" hint={`${nodeList.length} node${nodeList.length === 1 ? "" : "s"} reporting`} />
           <LiveTelemetryBoard nodes={nodeList} title="Faculty live telemetry board" />
-        </section>
+        </RevealOnScroll>
 
-        <section className="px-margin-mobile py-stack-md">
-          <h3 className="mb-stack-md font-headline-display text-lg font-bold text-on-surface">Monitored Labs</h3>
-          <div className="flex flex-col gap-stack-md">
-            {buildingList.map((building) => {
-              const bar =
-                building.status === "critical"
-                  ? "bg-critical-red"
-                  : building.status === "warning"
-                    ? "bg-warning-yellow"
-                    : "bg-safety-green";
-              const icon =
-                building.status === "critical" ? "error" : building.status === "warning" ? "warning" : "check_circle";
-              const iconColor =
-                building.status === "critical"
-                  ? "text-critical-red"
-                  : building.status === "warning"
-                    ? "text-warning-yellow"
-                    : "text-safety-green";
-              const related = openAlerts.find((a) => a.building_id === building.id);
-              return (
-                <div
-                  key={building.id}
-                  className="relative flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm"
-                >
-                  <div className={`absolute top-0 bottom-0 left-0 w-1 ${bar}`} />
-                  <div className="flex items-start justify-between pl-2">
-                    <div>
-                      <h4 className="font-building-id text-on-surface">{building.name}</h4>
-                      <p className="mt-1 text-sm text-on-surface-variant">
-                        {related ? related.title : "All systems nominal"}
-                      </p>
-                    </div>
-                    <span className={`material-symbols-outlined ${iconColor}`}>{icon}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="px-margin-mobile py-stack-md">
-          <h3 className="mb-stack-sm font-headline-display text-lg font-bold text-on-surface">Main Campus Status</h3>
-          <div
-            className="relative flex flex-col justify-end overflow-hidden rounded-xl pt-[200px] shadow-md"
-            style={{
-              backgroundImage:
-                "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAnrHnP3U6skscCwqT3j-f2-H7RqWNUgG7BxqSH7g3vt0uvVUAbCC_4diEvW23aYfaePdyVgaw04va8bTOXID8BjGUbMyBq2y6oFfMENBq9DDRS8qn1vs1qpRHQSDPP4uvgn1P44J3ZXiYG-A2vh9HuTevnklK-XImdiLNEPWJ0T9vDy-QYsWkQsI4vWJiYGyl3us0o8tF2H60GQSP_kvI0I7cGR79PAiHlQ_Pxpbm4vgjKKH9KBwx3')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-            <div className="relative z-10 p-4 text-white">
-              <p className="font-semibold">Live Camera Feed</p>
-              <p className="mt-1 text-sm opacity-80">Quad Area - Sector A</p>
+        <RevealOnScroll className="mt-10">
+          <SectionHeading
+            title="Monitored labs"
+            hint={`${buildingList.length} building${buildingList.length === 1 ? "" : "s"} supervised`}
+          />
+          {buildingList.length === 0 ? (
+            <div className="faculty-card rounded-[24px] border border-dashed border-slate-200 bg-white px-6 py-10 text-center">
+              <p className="text-sm font-semibold text-slate-600">No buildings are registered yet.</p>
             </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {buildingList.map((building, index) => {
+                const status =
+                  building.status === "critical" ? "critical" : building.status === "warning" ? "warning" : "nominal";
+                const dot =
+                  status === "critical"
+                    ? "bg-critical-red"
+                    : status === "warning"
+                      ? "bg-warning-yellow"
+                      : "bg-safety-green";
+                const iconColor =
+                  status === "critical"
+                    ? "text-critical-red"
+                    : status === "warning"
+                      ? "text-warning-yellow"
+                      : "text-safety-green";
+                const icon = status === "critical" ? "error" : status === "warning" ? "warning" : "check_circle";
+                const label = status === "critical" ? "Critical" : status === "warning" ? "Warning" : "Nominal";
+                const related = openAlerts.find((a) => a.building_id === building.id);
+
+                return (
+                  <article
+                    key={building.id}
+                    className="faculty-card faculty-card-hover faculty-rise flex items-start justify-between gap-4 rounded-[24px] border border-slate-200 bg-white p-5"
+                    style={{ animationDelay: `${index * 60}ms` }}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} aria-hidden="true" />
+                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">{label}</p>
+                      </div>
+                      <h3 className="mt-3 font-building-id text-slate-900">{building.name}</h3>
+                      <p className="mt-1 text-sm text-slate-500">{related ? related.title : "All systems nominal"}</p>
+                    </div>
+                    <span className={`material-symbols-outlined text-[22px] ${iconColor}`} aria-hidden="true">
+                      {icon}
+                    </span>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </RevealOnScroll>
+
+        <RevealOnScroll className="mt-10">
+          <SectionHeading title="Campus map" hint="Select a sensor marker for readings" />
+          <div className="faculty-card overflow-hidden rounded-[24px] border border-slate-200 bg-white p-3 sm:p-4">
+            <SensorMap nodes={nodeList} alerts={openAlerts} size="compact" />
           </div>
-        </section>
+        </RevealOnScroll>
       </main>
       <BottomNav role={profile.role} alertCount={openAlerts.length} />
     </div>

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-const REFRESH_INTERVAL_MS = 10_000;
+const REFRESH_INTERVAL_MS = 60_000;
 
 export function LiveDataStream() {
   const router = useRouter();
@@ -18,7 +18,6 @@ export function LiveDataStream() {
 
     const channel = supabase
       .channel("firealert-live-updates")
-      .on("postgres_changes", { event: "*", schema: "public", table: "sensor_nodes" }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "alerts" }, refresh);
 
     const subscription = channel.subscribe();

@@ -1,5 +1,6 @@
 import { AlertActions } from "@/components/AlertActions";
 import { BottomNav } from "@/components/BottomNav";
+import { SensorMap } from "@/components/SensorMap";
 import { requireProfile } from "@/lib/auth";
 import { buildRescueViewData } from "@/lib/live-data";
 import { createClient } from "@/lib/supabase/server";
@@ -15,268 +16,265 @@ export default async function RescueDashboard() {
 
   const alertList = (alerts as Alert[] | null) ?? [];
   const nodeList = (nodes as SensorNode[] | null) ?? [];
-  const { critical, focus, quickStats, timeline, escalations, actionQueue, mapZones, teamAssignments, responseBoard } =
+  const { critical, focus, quickStats, timeline, escalations, actionQueue, teamAssignments, responseBoard } =
     buildRescueViewData(nodeList, alertList);
   const openCount = alertList.filter((a) => a.status !== "resolved").length;
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-surface text-on-surface">
-      <header className="fixed top-0 z-50 flex h-16 w-full items-center justify-between border-b border-outline-variant bg-surface px-margin-mobile shadow-sm md:px-margin-desktop">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>
-            shield
-          </span>
-          <span className="font-headline-display text-[18px] font-bold uppercase tracking-wide text-primary">
-            Safety Monitoring
-          </span>
-        </div>
-        <div className="flex items-center gap-2 rounded-full bg-error-container px-3 py-1.5">
-          <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-critical-red" />
-          <span className="font-label-caps tracking-wider text-on-error-container">LIVE</span>
+    <div className="min-h-screen bg-surface text-on-surface">
+      <header className="sticky top-0 z-40 border-b border-outline-variant bg-surface/95 shadow-sm backdrop-blur">
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="material-symbols-outlined flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-white" style={{ fontVariationSettings: "'FILL' 1" }}>
+              local_fire_department
+            </span>
+            <div className="min-w-0">
+              <p className="font-label-caps text-[10px] uppercase text-on-surface-variant">Campus safety</p>
+              <h1 className="truncate text-base font-bold text-primary sm:text-lg">Rescue operations</h1>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="inline-flex items-center gap-2 rounded-full border border-safety-green/30 bg-safety-green/10 px-3 py-1.5 font-label-caps text-[10px] font-bold text-safety-green">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-safety-green" />
+              LIVE
+            </span>
+            <span className="rounded-full border border-outline-variant bg-surface-container px-3 py-1.5 font-data-mono text-[11px] font-bold text-on-surface-variant">
+              {openCount} ACTIVE
+            </span>
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto box-border grid min-h-screen max-w-7xl grid-cols-1 gap-gutter p-margin-mobile pt-24 pb-32 md:grid-cols-12 md:p-margin-desktop md:pb-20">
-        <div className="flex h-full flex-col gap-gutter md:col-span-7">
-          <section className="relative flex min-h-[350px] flex-grow overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm">
-            <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between border-b border-outline-variant bg-surface-container-lowest/90 p-3 backdrop-blur-md">
-              <span className="font-label-caps text-label-caps text-on-surface-variant">
-                {focus?.location ?? "SECTOR ALPHA"}
+      <main className="mx-auto max-w-7xl space-y-5 px-4 pb-28 pt-6 md:px-8 md:pb-24 md:pt-8">
+        <section className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="font-label-caps text-[10px] font-bold uppercase text-on-surface-variant">Incident response</p>
+            <h2 className="mt-1 text-2xl font-bold text-primary sm:text-3xl">Operations overview</h2>
+          </div>
+          <p className="font-data-mono text-xs text-on-surface-variant">
+            {focus ? `${focus.code} · ${focus.location}` : "No sensor selected"}
+          </p>
+        </section>
+
+        {critical ? (
+          <section className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-error/30 border-l-4 border-l-error bg-error-container/70 p-4 sm:p-5" aria-labelledby="active-incident-title">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="material-symbols-outlined mt-0.5 text-2xl text-error" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+              <div className="min-w-0">
+                <p className="font-label-caps text-[10px] font-bold uppercase text-error">Priority incident · {critical.severity}</p>
+                <h2 id="active-incident-title" className="mt-1 break-words text-lg font-bold text-on-error-container">{critical.title}</h2>
+                <p className="mt-1 text-sm text-on-error-container">{critical.location}{focus?.code ? ` · ${focus.code}` : ""}</p>
+              </div>
+            </div>
+            <span className="rounded-full border border-error/30 bg-white/70 px-3 py-1.5 font-data-mono text-xs font-bold uppercase text-error">
+              {critical.status.replaceAll("_", " ")}
+            </span>
+          </section>
+        ) : (
+          <section className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4 ${openCount ? "border-warning-yellow/40 bg-warning-yellow/10" : "border-safety-green/30 bg-safety-green/10"}`} aria-live="polite">
+            <div className="flex items-center gap-3">
+              <span className={`material-symbols-outlined ${openCount ? "text-warning-yellow" : "text-safety-green"}`}>
+                {openCount ? "info" : "verified_user"}
               </span>
-              <span className="font-data-mono text-[12px] text-on-surface-variant">{focus?.code ?? "—"}</span>
-            </div>
-            <div
-              className="absolute inset-0 h-full w-full bg-cover bg-center opacity-60"
-              style={{
-                backgroundImage:
-                  "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBjPEuTWu8BfT0vqkKS8WvgoRL2y5ZrwL-1jS9kQu95nl72BZIRLM5DZ0nXF-sACnZymGFJe5JZ_PNOtFPvql9pOuNnebUcNn21RRSpvy25vUOzbgca4jShcd8fXnxL4LPZFzUrB67xQgH-sCn3EM0UD74GAzDj4ZSPD48LF-DVicMotAMx8j6HB0Ch1f-ux6MIA-jgSmNhsn_ppdlOJ7aPCNErbceVxux6PR0ZtfcqSY-0X1Ppi6Am')",
-              }}
-            />
-            <div className="absolute top-1/2 left-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
-              <div className="pulse-critical relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-error shadow-md">
-                <span className="material-symbols-outlined text-[18px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  local_fire_department
-                </span>
+              <div>
+                <p className={`font-bold ${openCount ? "text-on-surface" : "text-safety-green"}`}>
+                  {openCount ? "No active critical incident" : "All clear"}
+                </p>
+                <p className="mt-0.5 text-sm text-on-surface-variant">
+                  {openCount ? `${openCount} alert${openCount === 1 ? "" : "s"} still require monitoring.` : "No active incidents are being tracked."}
+                </p>
               </div>
             </div>
           </section>
+        )}
 
-          <section className="grid gap-3 sm:grid-cols-3">
-            {quickStats.map((item) => (
-              <div key={item.label} className={`rounded-xl border p-3 ${item.style}`}>
-                <p className="font-label-caps text-[10px] uppercase tracking-[0.16em]">{item.label}</p>
-                <p className="mt-2 text-2xl font-black tracking-[-0.05em]">{item.value}</p>
+        <section className="grid gap-3 sm:grid-cols-3" aria-label="Current response metrics">
+          {quickStats.map((item) => (
+            <div key={item.label} className={`flex items-center justify-between gap-3 rounded-xl border p-4 ${item.style}`}>
+              <p className="font-label-caps text-[10px] font-bold uppercase">{item.label}</p>
+              <p className="font-data-mono text-2xl font-bold">{item.value}</p>
+            </div>
+          ))}
+        </section>
+
+        <div className="grid gap-4 xl:grid-cols-2">
+          <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm sm:p-5" aria-labelledby="response-actions-title">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="font-label-caps text-[10px] font-bold uppercase text-on-surface-variant">Next step</p>
+                <h3 id="response-actions-title" className="mt-1 text-lg font-bold text-primary">RESPONSE ACTIONS</h3>
               </div>
-            ))}
+              {critical ? (
+                <span className="rounded-full bg-error-container px-2.5 py-1 font-label-caps text-[10px] font-bold uppercase text-error">{critical.severity}</span>
+              ) : null}
+            </div>
+            {critical ? (
+              <AlertActions alert={critical} />
+            ) : (
+              <p className="rounded-lg border border-dashed border-outline-variant bg-surface-container-low p-4 text-sm text-on-surface-variant">
+                No critical alert is selected for response.
+              </p>
+            )}
           </section>
 
-          <section className="flex-shrink-0 rounded-xl border border-outline-variant bg-surface-container-lowest p-stack-md shadow-sm">
-            <h3 className="mb-4 px-1 font-label-caps text-label-caps text-on-surface-variant">SENSOR TELEMETRY</h3>
-            <div className="grid grid-cols-2 gap-stack-md">
-              <div className="rounded-lg border border-outline-variant/50 bg-surface-container p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="font-data-mono text-[12px] text-on-surface-variant">TEMP_CORE</span>
-                  <span className="font-data-mono text-[14px] font-bold text-error">{focus?.temperature_c ?? "—"}°C</span>
-                </div>
-                <div className="flex h-10 w-full items-end gap-[3px]">
-                  <div className="h-[20%] w-full rounded-t-sm bg-outline-variant" />
-                  <div className="h-[40%] w-full rounded-t-sm bg-warning-yellow" />
-                  <div className="h-[85%] w-full rounded-t-sm bg-error" />
-                </div>
+          <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm sm:p-5" aria-labelledby="current-status-title">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-label-caps text-[10px] font-bold uppercase text-on-surface-variant">Sensor snapshot</p>
+                <h3 id="current-status-title" className="mt-1 text-lg font-bold text-primary">CURRENT STATUS</h3>
               </div>
-              <div className="rounded-lg border border-outline-variant/50 bg-surface-container p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="font-data-mono text-[12px] text-on-surface-variant">SMOKE_DENS</span>
-                  <span className="font-data-mono text-[14px] font-bold text-error">
-                    {focus?.smoke_level === "high" ? "HIGH" : "OK"}
-                  </span>
-                </div>
-                <div className="flex h-10 w-full items-end gap-[3px]">
-                  <div className="h-[15%] w-full rounded-t-sm bg-outline-variant" />
-                  <div className="h-[50%] w-full rounded-t-sm bg-warning-yellow" />
-                  <div className="h-[90%] w-full rounded-t-sm bg-error" />
-                </div>
-              </div>
+              <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-data-mono text-[11px] font-bold ${focus?.status === "online" ? "bg-safety-green/10 text-safety-green" : "bg-surface-container text-on-surface-variant"}`}>
+                <span className={`h-2 w-2 rounded-full ${focus?.status === "online" ? "bg-safety-green" : "bg-node-offline"}`} />
+                {focus?.status === "online" ? "ONLINE" : focus ? "OFFLINE" : "NO NODE"}
+              </span>
             </div>
+            {focus ? (
+              <>
+                <p className="mb-3 text-sm font-semibold text-on-surface-variant">{focus.location} <span className="font-data-mono text-xs">· {focus.code}</span></p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <StatusMetric label="Temperature" value={`${focus.temperature_c}°C`} tone={focus.temperature_c >= 45 ? "danger" : "normal"} />
+                  <StatusMetric label="Smoke" value={focus.smoke_level.toUpperCase()} tone={focus.smoke_level === "high" ? "danger" : "normal"} />
+                  <StatusMetric label="Flame" value={focus.flame_detected ? "DETECTED" : "CLEAR"} tone={focus.flame_detected ? "danger" : "normal"} />
+                  <StatusMetric label="IR sensor" value={focus.ir_detected ? "DETECTED" : "CLEAR"} tone={focus.ir_detected ? "warning" : "normal"} />
+                </div>
+              </>
+            ) : (
+              <p className="rounded-lg bg-surface-container-low p-4 text-sm text-on-surface-variant">Waiting for sensor readings.</p>
+            )}
           </section>
-        </div>
 
-        <section className="flex h-full flex-col gap-gutter md:col-span-5">
-          {critical ? (
-            <div className="rounded-xl border border-error-container bg-error-container p-stack-lg text-on-error-container shadow-sm">
-              <div className="mb-stack-sm flex items-center gap-3">
-                <span className="material-symbols-outlined text-[28px] text-error" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  warning
-                </span>
-                <h2 className="font-headline-display text-[22px] font-bold text-error">CRITICAL ALERT</h2>
+          <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm sm:p-5" aria-labelledby="emergency-map-title">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="font-label-caps text-[10px] font-bold uppercase text-on-surface-variant">Campus zones</p>
+                <h3 id="emergency-map-title" className="mt-1 text-lg font-bold text-primary">EMERGENCY MAP PANEL</h3>
               </div>
-              <p className="mb-stack-md font-data-mono text-[16px] font-semibold">LOC: {critical.location}</p>
-              <div className="mt-stack-md flex items-end justify-between border-t border-error/20 pt-4">
-                <div className="flex flex-col gap-1">
-                  <span className="font-label-caps text-[11px] text-error">STATUS</span>
-                  <span className="font-data-mono text-[18px] font-bold uppercase">{critical.status}</span>
-                </div>
-                <span className="rounded-full border border-error/30 bg-error/10 px-3 py-1 font-data-mono text-[12px] font-bold text-error">
-                  {focus?.code}
-                </span>
-              </div>
+              <span className="material-symbols-outlined text-primary" aria-hidden="true">map</span>
             </div>
-          ) : (
-            <div className="rounded-xl border border-safety-green/30 bg-safety-green/10 p-stack-lg">
-              <h2 className="font-headline-display text-[22px] font-bold text-safety-green">ALL CLEAR</h2>
-              <p className="mt-2 text-on-surface-variant">No critical incidents are active.</p>
-            </div>
-          )}
+            <SensorMap nodes={nodeList} alerts={alertList} size="compact" />
+          </section>
 
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-stack-lg shadow-sm">
-            <div className="mb-stack-md flex items-center justify-between border-b border-outline-variant pb-stack-sm">
-              <h3 className="font-label-caps text-label-caps text-on-surface-variant">CURRENT STATUS</h3>
-              <div className="flex items-center gap-1.5 rounded-full bg-safety-green/10 px-2 py-1">
-                <span className="material-symbols-outlined text-[16px] text-safety-green">sensors</span>
-                <span className="font-data-mono text-[11px] font-bold text-safety-green">
-                  {focus?.status === "online" ? "ONLINE" : "OFFLINE"}
-                </span>
+          <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm sm:p-5" aria-labelledby="timeline-title">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="font-label-caps text-[10px] font-bold uppercase text-on-surface-variant">Recent activity</p>
+                <h3 id="timeline-title" className="mt-1 text-lg font-bold text-primary">LIVE INCIDENT TIMELINE</h3>
               </div>
+              <span className="material-symbols-outlined text-primary" aria-hidden="true">history</span>
             </div>
-            <div className="grid grid-cols-2 gap-stack-md">
-              <div className="flex flex-col gap-1 rounded-lg border border-outline-variant/50 bg-surface-container p-3">
-                <span className="font-label-caps text-[11px] text-on-surface-variant">TEMP</span>
-                <span className="font-headline-display text-[24px] font-bold text-error">{focus?.temperature_c ?? "—"}°C</span>
-              </div>
-              <div className="flex flex-col gap-1 rounded-lg border border-outline-variant/50 bg-surface-container p-3">
-                <span className="font-label-caps text-[11px] text-on-surface-variant">SMOKE</span>
-                <span className="font-headline-display text-[24px] font-bold text-error">
-                  {focus?.smoke_level === "high" ? "HIGH" : "NORMAL"}
-                </span>
-              </div>
-              <div className="col-span-2 flex flex-col gap-2 rounded-lg border border-error-container bg-error-container p-4">
-                <span className="font-label-caps text-[11px] text-error">FLAME DETECTED</span>
-                <div className="flex items-center gap-2 text-error">
-                  <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    local_fire_department
-                  </span>
-                  <span className="font-data-mono text-[16px] font-bold tracking-widest">
-                    {focus?.flame_detected ? "CONFIRMED" : "NONE"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+            {timeline.length ? (
+              <ol className="space-y-2">
+                {timeline.map((event) => (
+                  <li key={event.id} className="flex gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-3">
+                    <div className="flex min-w-[52px] flex-col items-center">
+                      <span className="font-data-mono text-[11px] font-bold text-on-surface-variant">{event.time}</span>
+                      <span className="mt-2 h-2.5 w-2.5 rounded-full bg-error" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="break-words font-bold text-primary">{event.title}</p>
+                      <p className="mt-1 break-words text-sm text-on-surface-variant">{event.detail}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="rounded-lg border border-dashed border-outline-variant bg-surface-container-low p-4 text-sm text-on-surface-variant">No active incidents in the timeline.</p>
+            )}
+          </section>
 
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-stack-lg shadow-sm">
-            <h3 className="mb-3 font-label-caps text-[12px] text-on-surface-variant">RESPONSE BOARD</h3>
-            <div className="space-y-3">
-              {responseBoard.map((item) => (
-                <div key={item.label} className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container p-3">
-                  <div>
-                    <p className="font-data-mono text-[11px] text-on-surface-variant">{item.label}</p>
-                    <p className="mt-1 text-base font-bold text-primary">{item.value}</p>
-                  </div>
-                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${item.badgeStyle}`}>
-                    {item.badge}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-stack-lg shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-label-caps text-[12px] text-on-surface-variant">LIVE INCIDENT TIMELINE</h3>
-              <span className="material-symbols-outlined text-[18px] text-primary">history</span>
-            </div>
-            <div className="space-y-3">
-              {timeline.map((event) => (
-                <div key={event.time} className="flex gap-3 rounded-lg border border-outline-variant bg-surface-container p-3">
-                  <div className="flex min-w-[52px] flex-col items-center">
-                    <span className="font-data-mono text-[11px] text-on-surface-variant">{event.time}</span>
-                    <span className="mt-1 h-2.5 w-2.5 rounded-full bg-error" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-primary">{event.title}</p>
-                    <p className="mt-1 text-sm text-on-surface-variant">{event.detail}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-stack-lg shadow-sm">
-            <h3 className="mb-3 font-label-caps text-[12px] text-on-surface-variant">ESCALATIONS PANEL</h3>
-            <div className="space-y-3">
-              {escalations.map((item) => (
-                <div key={item.level} className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container p-3">
-                  <div>
-                    <p className="font-data-mono text-[10px] uppercase tracking-[0.12em] text-on-surface-variant">{item.level}</p>
-                    <p className="mt-1 font-bold text-primary">{item.title}</p>
-                  </div>
-                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${item.tone}`}>
-                    {item.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-stack-lg shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-label-caps text-[12px] text-on-surface-variant">CHECKLIST / ACTION QUEUE</h3>
-              <span className="material-symbols-outlined text-[18px] text-primary">task_alt</span>
+          <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm sm:p-5" aria-labelledby="response-board-title">
+            <div className="mb-4">
+              <p className="font-label-caps text-[10px] font-bold uppercase text-on-surface-variant">Field coordination</p>
+              <h3 id="response-board-title" className="mt-1 text-lg font-bold text-primary">RESPONSE BOARD</h3>
             </div>
             <div className="space-y-2">
-              {actionQueue.map((task, index) => (
-                <div key={task} className="flex items-start gap-3 rounded-lg border border-outline-variant bg-surface-container p-3">
-                  <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
-                    {index + 1}
-                  </span>
-                  <p className="text-sm text-on-surface-variant">{task}</p>
+              {responseBoard.map((item) => (
+                <div key={item.label} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-outline-variant bg-surface-container-low p-3">
+                  <div className="min-w-0">
+                    <p className="font-data-mono text-[10px] uppercase text-on-surface-variant">{item.label}</p>
+                    <p className="mt-1 break-words text-sm font-bold text-primary">{item.value}</p>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-1 font-label-caps text-[10px] font-bold uppercase ${item.badgeStyle}`}>{item.badge}</span>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
 
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-stack-lg shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-label-caps text-[12px] text-on-surface-variant">EMERGENCY MAP PANEL</h3>
-              <span className="material-symbols-outlined text-[18px] text-primary">map</span>
+          <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm sm:p-5" aria-labelledby="escalations-title">
+            <div className="mb-4">
+              <p className="font-label-caps text-[10px] font-bold uppercase text-on-surface-variant">Escalation status</p>
+              <h3 id="escalations-title" className="mt-1 text-lg font-bold text-primary">ESCALATIONS PANEL</h3>
             </div>
-            <div className="rounded-xl border border-dashed border-outline-variant bg-surface-container p-4">
-              <div className="mb-3 h-32 rounded-lg bg-[radial-gradient(circle_at_center,_rgba(234,88,12,0.22),_transparent_30%),linear-gradient(135deg,#dfe7f7_0%,#eef2ff_50%,#f8fafc_100%)]" />
-              <div className="space-y-2">
-                {mapZones.map((zone) => (
-                  <div key={zone.name} className={`flex items-center justify-between rounded-lg border px-3 py-2 ${zone.style}`}>
-                    <span className="font-bold text-primary">{zone.name}</span>
-                    <span className="font-data-mono text-[10px] uppercase tracking-[0.12em]">{zone.flag}</span>
+            <div className="space-y-2">
+              {escalations.map((item) => (
+                <div key={item.level} className="flex items-center justify-between gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-3">
+                  <div>
+                    <p className="font-data-mono text-[10px] uppercase text-on-surface-variant">{item.level}</p>
+                    <p className="mt-1 text-sm font-bold text-primary">{item.title}</p>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-1 font-label-caps text-[10px] font-bold uppercase ${item.tone}`}>{item.status}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm sm:p-5" aria-labelledby="team-assignments-title">
+            <div className="mb-4">
+              <p className="font-label-caps text-[10px] font-bold uppercase text-on-surface-variant">Available response units</p>
+              <h3 id="team-assignments-title" className="mt-1 text-lg font-bold text-primary">TEAM ASSIGNMENT CARDS</h3>
+            </div>
+            {teamAssignments.length ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {teamAssignments.map((team) => (
+                  <div key={team.name} className="rounded-lg border border-outline-variant bg-surface-container-low p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-bold text-primary">{team.name}</p>
+                      <span className={`font-data-mono text-[10px] font-bold uppercase ${team.color}`}>{team.status}</span>
+                    </div>
+                    <p className="mt-2 text-sm text-on-surface-variant">{team.role}</p>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-outline-variant bg-surface-container-low p-4 text-sm text-on-surface-variant">No response units are available yet.</p>
+            )}
+          </section>
 
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-stack-lg shadow-sm">
-            <h3 className="mb-3 font-label-caps text-[12px] text-on-surface-variant">TEAM ASSIGNMENT CARDS</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {teamAssignments.map((team) => (
-                <div key={team.name} className="rounded-lg border border-outline-variant bg-surface-container p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="font-bold text-primary">{team.name}</p>
-                    <span className={`font-data-mono text-[10px] uppercase tracking-[0.12em] ${team.color}`}>{team.status}</span>
-                  </div>
-                  <p className="mt-2 text-sm text-on-surface-variant">{team.role}</p>
-                </div>
+          <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm sm:p-5 xl:col-span-2" aria-labelledby="action-queue-title">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary" aria-hidden="true">task_alt</span>
+              <div>
+                <p className="font-label-caps text-[10px] font-bold uppercase text-on-surface-variant">Operational checklist</p>
+                <h3 id="action-queue-title" className="mt-1 text-lg font-bold text-primary">CHECKLIST / ACTION QUEUE</h3>
+              </div>
+            </div>
+            <ol className="grid gap-2 md:grid-cols-3">
+              {actionQueue.map((task, index) => (
+                <li key={task} className="flex items-start gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary font-data-mono text-xs font-bold text-white">{index + 1}</span>
+                  <p className="text-sm leading-5 text-on-surface-variant">{task}</p>
+                </li>
               ))}
-            </div>
-          </div>
-
-          {critical ? (
-            <div className="z-40 mt-auto pt-2">
-              <h3 className="mb-3 font-label-caps text-[12px] text-on-surface-variant">RESPONSE ACTIONS</h3>
-              <AlertActions alert={critical} />
-            </div>
-          ) : null}
-        </section>
+            </ol>
+          </section>
+        </div>
       </main>
       <BottomNav role={profile.role} alertCount={openCount} />
+    </div>
+  );
+}
+
+function StatusMetric({ label, value, tone }: { label: string; value: string; tone: "danger" | "warning" | "normal" }) {
+  const styles = {
+    danger: "border-error/25 bg-error-container/60 text-error",
+    warning: "border-warning-yellow/30 bg-warning-yellow/10 text-on-surface",
+    normal: "border-outline-variant bg-surface-container-low text-primary",
+  };
+
+  return (
+    <div className={`min-w-0 rounded-lg border p-3 ${styles[tone]}`}>
+      <p className="font-label-caps text-[10px] font-bold uppercase text-on-surface-variant">{label}</p>
+      <p className="mt-2 break-words font-data-mono text-sm font-bold">{value}</p>
     </div>
   );
 }

@@ -275,3 +275,242 @@ body {
     transform: translateY(0) scale(1);
   }
 }
+
+/* --------------------------------------------------------------------------
+   Faculty dashboard - calm minimal white motion layer
+   Additive only: these classes are opt-in, scoped to the faculty screen and
+   do not modify any existing token, the global body gradient, or other pages.
+   Every effect degrades to a static state under prefers-reduced-motion.
+-------------------------------------------------------------------------- */
+
+.faculty-rise {
+  animation: facultyRise 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.faculty-reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 560ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 560ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.faculty-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.faculty-card {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 12px 32px -12px rgba(15, 23, 42, 0.1);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.faculty-card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(15, 23, 42, 0.14);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 22px 44px -16px rgba(15, 23, 42, 0.16);
+}
+
+.faculty-live-dot {
+  animation: facultySoftPulse 2.4s ease-in-out infinite;
+}
+
+.faculty-live-dot--alert {
+  animation-name: facultyAlertPulse;
+}
+
+.faculty-ring {
+  transition: stroke-dashoffset 1000ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.faculty-meter-fill {
+  transition: width 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes facultyRise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes facultySoftPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(22, 163, 74, 0);
+  }
+}
+
+@keyframes facultyAlertPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(220, 38, 38, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faculty-rise,
+  .faculty-live-dot {
+    animation: none;
+  }
+
+  .faculty-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .faculty-ring,
+  .faculty-meter-fill {
+    transition: none;
+  }
+
+  .faculty-card,
+  .faculty-card-hover:hover {
+    transform: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Auth experience - peeking mascot + neutral entrance motion
+   Additive only. Every effect degrades to a static state under
+   prefers-reduced-motion.
+-------------------------------------------------------------------------- */
+
+.rise-in {
+  animation: riseIn 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.peek-pop {
+  animation: peekPop 1150ms cubic-bezier(0.22, 1.35, 0.36, 1) both;
+}
+
+.peek-bob {
+  animation: peekBob 3.4s ease-in-out 1150ms infinite;
+}
+
+.peek-blink {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: peekBlink 5.4s ease-in-out 1600ms infinite;
+}
+
+.peek-dart {
+  animation: peekDart 7s ease-in-out infinite;
+}
+
+.peek-wave {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: peekWave 2.6s ease-in-out 900ms 1;
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes peekPop {
+  0% {
+    transform: translateY(78%);
+  }
+  62% {
+    transform: translateY(-6%);
+  }
+  80% {
+    transform: translateY(2%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes peekBob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(-1.2deg);
+  }
+}
+
+@keyframes peekBlink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.08);
+  }
+}
+
+@keyframes peekDart {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-2.5px, 1px);
+  }
+  45% {
+    transform: translate(2.5px, -1px);
+  }
+  70% {
+    transform: translate(-1.5px, 1.5px);
+  }
+}
+
+@keyframes peekWave {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(-22deg);
+  }
+  40% {
+    transform: rotate(-6deg);
+  }
+  60% {
+    transform: rotate(-20deg);
+  }
+  80% {
+    transform: rotate(-4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in,
+  .peek-pop,
+  .peek-bob,
+  .peek-blink,
+  .peek-dart,
+  .peek-wave {
+    animation: none;
+  }
+}
